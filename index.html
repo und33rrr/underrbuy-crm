@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Underrbuy CRM</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Sidebar (Desktop) -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">UNDRRBUY</div>
+    <a class="nav-item active" data-page="dashboard">● Главная</a>
+    <a class="nav-item" data-page="orders">● Заказы</a>
+    <a class="nav-item" data-page="reviews">● Отзывы</a>
+    <a class="nav-item" data-page="settings">● Настройки</a>
+    <div class="sidebar-footer">
+      <span class="sync-status" id="syncStatus">Синхронизировано ✓</span>
+    </div>
+  </nav>
+
+  <!-- Bottom Nav (Mobile) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <a class="bottom-nav-item active" data-page="dashboard">
+      <span class="bottom-nav-icon">●</span>
+      <span>Главная</span>
+    </a>
+    <a class="bottom-nav-item" data-page="orders">
+      <span class="bottom-nav-icon">●</span>
+      <span>Заказы</span>
+    </a>
+    <a class="bottom-nav-item" data-page="reviews">
+      <span class="bottom-nav-icon">●</span>
+      <span>Отзывы</span>
+    </a>
+    <a class="bottom-nav-item" data-page="settings">
+      <span class="bottom-nav-icon">●</span>
+      <span>Настройки</span>
+    </a>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content" id="mainContent">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Главная</h1>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Сегодня</div>
+          <div class="stat-value" id="statToday">0 BYN</div>
+          <div class="stat-sub" id="statTodayYuan">≈ 0 ¥</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Неделя</div>
+          <div class="stat-value" id="statWeek">0 BYN</div>
+          <div class="stat-sub" id="statWeekYuan">≈ 0 ¥</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Месяц</div>
+          <div class="stat-value" id="statMonth">0 BYN</div>
+          <div class="stat-sub" id="statMonthYuan">≈ 0 ¥</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Год</div>
+          <div class="stat-value" id="statYear">0 BYN</div>
+          <div class="stat-sub" id="statYearYuan">≈ 0 ¥</div>
+        </div>
+      </div>
+
+      <div class="alipay-section">
+        <div class="alipay-header">
+          <span class="alipay-title">Alipay</span>
+          <div class="alipay-buttons">
+            <button class="btn btn-sm" onclick="openModal('newOrder')">+ Новый заказ</button>
+            <button class="btn btn-sm" onclick="openModal('withdraw')">− Вывести из Alipay</button>
+          </div>
+        </div>
+        <div class="alipay-balance">
+          <span>Баланс:</span>
+          <span id="alipayBalance">0 ¥</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Последние заказы</h2>
+        <div id="recentOrders"></div>
+      </div>
+    </div>
+
+    <!-- Orders -->
+    <div class="page" id="page-orders">
+      <div class="page-header">
+        <h1>Заказы</h1>
+        <button class="btn" onclick="openModal('newOrder')">+ Новый заказ</button>
+      </div>
+
+      <div class="filters">
+        <input type="text" class="input" id="orderSearch" placeholder="Поиск по Telegram или трек-номеру...">
+        <select class="select" id="filterStatus">
+          <option value="">Все статусы</option>
+          <option value="awaiting">Ожидает</option>
+          <option value="in_transit">В пути</option>
+          <option value="received_by_me">Получен мной</option>
+          <option value="sent_to_client">Отправлен клиенту</option>
+          <option value="completed">Завершён</option>
+        </select>
+        <select class="select" id="filterDelivery">
+          <option value="">Все доставки</option>
+          <option value="air">Авиа</option>
+          <option value="auto">Авто</option>
+        </select>
+      </div>
+
+      <div id="ordersList"></div>
+    </div>
+
+    <!-- Reviews -->
+    <div class="page" id="page-reviews">
+      <div class="page-header">
+        <h1>Отзывы</h1>
+        <button class="btn" onclick="openModal('newReview')">+ Новый клиент</button>
+      </div>
+
+      <div class="filters">
+        <input type="text" class="input" id="reviewSearch" placeholder="Поиск по Telegram...">
+        <select class="select" id="filterReviewStatus">
+          <option value="">Все</option>
+          <option value="not_wrote">Ещё не написал</option>
+          <option value="waiting">Жду</option>
+          <option value="left">Оставил</option>
+        </select>
+      </div>
+
+      <div id="reviewsList"></div>
+    </div>
+
+    <!-- Settings -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h1>Настройки</h1>
+      </div>
+
+      <div class="settings-section">
+        <h2>Курсы валют</h2>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label>¥ → BYN (для клиентов)</label>
+            <input type="number" class="input" id="setYuanToByn" step="0.01">
+          </div>
+          <div class="setting-item">
+            <label>¥ → BYN (обмен для вывода)</label>
+            <input type="number" class="input" id="setYuanToBynExchange" step="0.01">
+          </div>
+          <div class="setting-item">
+            <label>¥ → RUB</label>
+            <input type="number" class="input" id="setYuanToRub" step="0.01">
+          </div>
+          <div class="setting-item">
+            <label>$ → ¥</label>
+            <input type="number" class="input" id="setDollarToYuan" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2>Тарифы доставки</h2>
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label>Авто ($/кг)</label>
+            <input type="number" class="input" id="setAutoPrice" step="0.1">
+          </div>
+          <div class="setting-item">
+            <label>Авиа стандарт (¥/кг)</label>
+            <input type="number" class="input" id="setAirStandard" step="1">
+          </div>
+          <div class="setting-item">
+            <label>Авиа эконом (¥/кг)</label>
+            <input type="number" class="input" id="setAirEconomy" step="1">
+          </div>
+          <div class="setting-item">
+            <label>Авиа быстрый (¥/кг)</label>
+            <input type="number" class="input" id="setAirFast" step="1">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2>Бэкап данных</h2>
+        <div class="backup-buttons">
+          <button class="btn" onclick="exportData()">Экспорт JSON</button>
+          <button class="btn" onclick="document.getElementById('importFile').click()">Импорт JSON</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modals -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal()"></div>
+
+  <!-- New Order Modal -->
+  <div class="modal" id="modal-newOrder">
+    <div class="modal-header">
+      <h2>Новый заказ</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Товар</label>
+          <input type="text" class="input" id="orderProduct">
+        </div>
+        <div class="form-group">
+          <label>Telegram</label>
+          <input type="text" class="input" id="orderTelegram" placeholder="@username">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Доставка</label>
+          <select class="select" id="orderDeliveryType" onchange="toggleAirTariff()">
+            <option value="auto">Авто</option>
+            <option value="air">Авиа</option>
+          </select>
+        </div>
+        <div class="form-group" id="airTariffGroup" style="display:none">
+          <label>Тариф</label>
+          <select class="select" id="orderAirTariff">
+            <option value="120">120 ¥/кг</option>
+            <option value="110">110 ¥/кг</option>
+            <option value="100">100 ¥/кг</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Валюта</label>
+          <select class="select" id="orderCurrency" onchange="updateOrderPreview()">
+            <option value="BYN">BYN</option>
+            <option value="RUB">RUB</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Цена товара (¥)</label>
+          <input type="number" class="input" id="orderPriceYuan" step="0.01" oninput="updateOrderPreview()">
+        </div>
+        <div class="form-group">
+          <label>Вес (кг)</label>
+          <input type="number" class="input" id="orderWeight" step="0.1" oninput="updateOrderPreview()">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Курс ¥ → валюта</label>
+          <input type="number" class="input" id="orderRate" step="0.01" oninput="updateOrderPreview()">
+        </div>
+        <div class="form-group">
+          <label>Цена для клиента</label>
+          <input type="number" class="input" id="orderClientPrice" step="0.01" oninput="updateOrderPreview()">
+        </div>
+      </div>
+
+      <div class="preview" id="orderPreview">
+        <div class="preview-row"><span>Доставка:</span><span id="previewDelivery">0 ¥</span></div>
+        <div class="preview-row"><span>Себестоимость:</span><span id="previewCost">0 BYN</span></div>
+        <div class="preview-row"><span>Прибыль:</span><span id="previewProfit">0 BYN</span></div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Предоплата</label>
+          <input type="number" class="input" id="orderPrepayment" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Трек-номер</label>
+          <input type="text" class="input" id="orderTrack">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Комментарий</label>
+        <input type="text" class="input" id="orderComment">
+      </div>
+
+      <button class="btn btn-full" onclick="saveOrder()">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- New Review Modal -->
+  <div class="modal" id="modal-newReview">
+    <div class="modal-header">
+      <h2>Новый клиент</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Telegram</label>
+        <input type="text" class="input" id="reviewTelegram" placeholder="@username">
+      </div>
+      <div class="form-group">
+        <label>Статус</label>
+        <select class="select" id="reviewStatus">
+          <option value="not_wrote">Ещё не написал</option>
+          <option value="waiting">Жду</option>
+          <option value="left">Оставил</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Комментарий</label>
+        <input type="text" class="input" id="reviewComment">
+      </div>
+      <button class="btn btn-full" onclick="saveReview()">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- Withdraw Modal -->
+  <div class="modal" id="modal-withdraw">
+    <div class="modal-header">
+      <h2>Вывести из Alipay</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Сумма (¥)</label>
+        <input type="number" class="input" id="withdrawAmount" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Комментарий</label>
+        <input type="text" class="input" id="withdrawComment">
+      </div>
+      <button class="btn btn-full" onclick="saveWithdraw()">Вывести</button>
+      <div class="section" style="margin-top:24px">
+        <h2>История выводов</h2>
+        <div id="withdrawalsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
