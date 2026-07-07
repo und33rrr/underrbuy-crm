@@ -12,7 +12,7 @@
 <body>
   <!-- Sidebar (Desktop) -->
   <nav class="sidebar" id="sidebar">
-    <div class="sidebar-header">UNDRRBUY</div>
+    <div class="sidebar-header">UNDERBUY</div>
     <a class="nav-item active" data-page="dashboard"><span class="nav-dot"></span> Главная</a>
     <a class="nav-item" data-page="orders"><span class="nav-dot"></span> Заказы</a>
     <a class="nav-item" data-page="reviews"><span class="nav-dot"></span> Отзывы</a>
@@ -343,6 +343,119 @@
         <h2>История выводов</h2>
         <div id="withdrawalsList"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Edit Order Modal -->
+  <div class="modal" id="modal-editOrder">
+    <div class="modal-header">
+      <h2>Редактировать заказ</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editOrderId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Товар</label>
+          <input type="text" class="input" id="editOrderProduct">
+        </div>
+        <div class="form-group">
+          <label>Telegram</label>
+          <input type="text" class="input" id="editOrderTelegram" placeholder="@username">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Доставка</label>
+          <select class="select" id="editOrderDeliveryType" onchange="toggleEditAirTariff()">
+            <option value="auto">Авто</option>
+            <option value="air">Авиа</option>
+          </select>
+        </div>
+        <div class="form-group" id="editAirTariffGroup" style="display:none">
+          <label>Тариф</label>
+          <select class="select" id="editOrderAirTariff">
+            <option value="120">120 ¥/кг</option>
+            <option value="110">110 ¥/кг</option>
+            <option value="100">100 ¥/кг</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Валюта</label>
+          <select class="select" id="editOrderCurrency" onchange="updateEditPreview()">
+            <option value="BYN">BYN</option>
+            <option value="RUB">RUB</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Цена товара (¥)</label>
+          <input type="number" class="input" id="editOrderPriceYuan" step="0.01" oninput="updateEditPreview()">
+        </div>
+        <div class="form-group">
+          <label>Вес (кг)</label>
+          <input type="number" class="input" id="editOrderWeight" step="0.1" oninput="updateEditPreview()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Курс ¥ → валюта</label>
+          <input type="number" class="input" id="editOrderRate" step="0.01" oninput="updateEditPreview()">
+        </div>
+        <div class="form-group">
+          <label>Цена для клиента</label>
+          <input type="number" class="input" id="editOrderClientPrice" step="0.01" oninput="updateEditPreview()">
+        </div>
+      </div>
+      <div class="preview" id="editOrderPreview">
+        <div class="preview-row"><span>Доставка:</span><span id="editPreviewDelivery">0 ¥</span></div>
+        <div class="preview-row"><span>Себестоимость:</span><span id="editPreviewCost">0 BYN</span></div>
+        <div class="preview-row"><span>Прибыль:</span><span id="editPreviewProfit">0 BYN</span></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Предоплата</label>
+          <input type="number" class="input" id="editOrderPrepayment" step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Трек-номер</label>
+          <input type="text" class="input" id="editOrderTrack">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Комментарий</label>
+        <input type="text" class="input" id="editOrderComment">
+      </div>
+      <button class="btn btn-full" onclick="updateOrder()">Сохранить</button>
+    </div>
+  </div>
+
+  <!-- Edit Review Modal -->
+  <div class="modal" id="modal-editReview">
+    <div class="modal-header">
+      <h2>Редактировать клиента</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editReviewId">
+      <div class="form-group">
+        <label>Telegram</label>
+        <input type="text" class="input" id="editReviewTelegram" placeholder="@username">
+      </div>
+      <div class="form-group">
+        <label>Статус</label>
+        <select class="select" id="editReviewStatus">
+          <option value="not_wrote">Ещё не написал</option>
+          <option value="waiting">Жду</option>
+          <option value="left">Оставил</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Комментарий</label>
+        <input type="text" class="input" id="editReviewComment">
+      </div>
+      <button class="btn btn-full" onclick="updateReview()">Сохранить</button>
     </div>
   </div>
 

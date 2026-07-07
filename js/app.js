@@ -228,7 +228,10 @@ function renderOrderCard(order, compact) {
     <div class="card">
       <div class="card-header">
         <span class="card-title">${esc(order.product)}</span>
-        <button class="card-delete" onclick="deleteOrder('${order.id}')" title="Удалить">&times;</button>
+        <div class="card-actions">
+          <button class="card-edit" onclick="editOrder('${order.id}')" title="Редактировать">✎</button>
+          <button class="card-delete" onclick="deleteOrder('${order.id}')" title="Удалить">&times;</button>
+        </div>
       </div>
       <div class="card-status">
         <select class="select" onchange="changeOrderStatus('${order.id}', this.value)">
@@ -275,7 +278,10 @@ function renderReviews() {
     <div class="card">
       <div class="card-header">
         <span class="card-title">${esc(r.telegram)}</span>
-        <button class="card-delete" onclick="deleteReview('${r.id}')" title="Удалить">&times;</button>
+        <div class="card-actions">
+          <button class="card-edit" onclick="editReview('${r.id}')" title="Редактировать">✎</button>
+          <button class="card-delete" onclick="deleteReview('${r.id}')" title="Удалить">&times;</button>
+        </div>
       </div>
       <div class="card-status">
         <select class="select" onchange="changeReviewStatus('${r.id}', this.value)">
@@ -364,6 +370,86 @@ function changeOrderStatus(id, status) {
   }
 }
 
+function editOrder(id) {
+  const order = state.orders.find(o => o.id === id);
+  if (!order) return;
+  document.getElementById('editOrderId').value = order.id;
+  document.getElementById('editOrderProduct').value = order.product || '';
+  document.getElementById('editOrderTelegram').value = order.telegram || '';
+  document.getElementById('editOrderDeliveryType').value = order.deliveryType || 'auto';
+  document.getElementById('editOrderAirTariff').value = order.airTariff || 120;
+  document.getElementById('editOrderCurrency').value = order.currency || 'BYN';
+  document.getElementById('editOrderPriceYuan').value = order.priceYuan || '';
+  document.getElementById('editOrderWeight').value = order.weightKg || '';
+  document.getElementById('editOrderRate').value = order.rateYuanToCurrency || state.settings.yuanToByn;
+  document.getElementById('editOrderClientPrice').value = order.clientPrice || '';
+  document.getElementById('editOrderPrepayment').value = order.prepayment || '';
+  document.getElementById('editOrderTrack').value = order.trackNumber || '';
+  document.getElementById('editOrderComment').value = order.comment || '';
+  toggleEditAirTariff();
+  updateEditPreview();
+  openModal('editOrder');
+}
+
+function toggleEditAirTariff() {
+  const isAir = document.getElementById('editOrderDeliveryType').value === 'air';
+  document.getElementById('editAirTariffGroup').style.display = isAir ? 'block' : 'none';
+  updateEditPreview();
+}
+
+function updateEditPreview() {
+  const priceYuan = parseFloat(document.getElementById('editOrderPriceYuan').value) || 0;
+  const weight = parseFloat(document.getElementById('editOrderWeight').value) || 0;
+  const rate = parseFloat(document.getElementById('editOrderRate').value) || state.settings.yuanToByn;
+  const clientPrice = parseFloat(document.getElementById('editOrderClientPrice').value) || 0;
+  const deliveryType = document.getElementById('editOrderDeliveryType').value;
+  const currency = document.getElementById('editOrderCurrency').value;
+
+  let deliveryYuan;
+  if (deliveryType === 'auto') {
+    deliveryYuan = weight * (state.settings.autoPricePerKg || 6) * (state.settings.dollarToYuan || 7);
+  } else {
+    const tariff = parseInt(document.getElementById('editOrderAirTariff').value) || 120;
+    deliveryYuan = weight * tariff;
+  }
+
+  const totalYuan = priceYuan + deliveryYuan;
+  const cost = totalYuan * rate;
+  const profit = clientPrice - cost;
+
+  document.getElementById('editPreviewDelivery').textContent = formatMoney(deliveryYuan) + ' ¥';
+  document.getElementById('editPreviewCost').textContent = formatMoney(cost) + ' ' + currency;
+  const profitEl = document.getElementById('editPreviewProfit');
+  profitEl.textContent = formatMoney(profit) + ' ' + currency;
+  profitEl.style.color = profit >= 0 ? 'var(--black)' : '#c00';
+}
+
+function updateOrder() {
+  const id = document.getElementById('editOrderId').value;
+  const order = state.orders.find(o => o.id === id);
+  if (!order) return;
+
+  order.product = document.getElementById('editOrderProduct').value.trim();
+  order.telegram = document.getElementById('editOrderTelegram').value.trim();
+  order.deliveryType = document.getElementById('editOrderDeliveryType').value;
+  order.airTariff = parseInt(document.getElementById('editOrderAirTariff').value);
+  order.currency = document.getElementById('editOrderCurrency').value;
+  order.priceYuan = parseFloat(document.getElementById('editOrderPriceYuan').value) || 0;
+  order.weightKg = parseFloat(document.getElementById('editOrderWeight').value) || 0;
+  order.rateYuanToCurrency = parseFloat(document.getElementById('editOrderRate').value) || state.settings.yuanToByn;
+  order.clientPrice = parseFloat(document.getElementById('editOrderClientPrice').value) || 0;
+  order.prepayment = parseFloat(document.getElementById('editOrderPrepayment').value) || 0;
+  order.trackNumber = document.getElementById('editOrderTrack').value.trim();
+  order.comment = document.getElementById('editOrderComment').value.trim();
+
+  if (!order.product) return alert('Укажите товар');
+
+  saveLocal();
+  firebaseSave('orders', state.orders);
+  closeModal();
+  renderAll();
+}
+
 function clearOrderForm() {
   ['orderProduct', 'orderTelegram', 'orderPriceYuan', 'orderWeight',
    'orderClientPrice', 'orderPrepayment', 'orderTrack', 'orderComment'].forEach(id => {
@@ -412,6 +498,33 @@ function changeReviewStatus(id, status) {
     firebaseSave('reviews', state.reviews);
     renderAll();
   }
+}
+
+function editReview(id) {
+  const review = state.reviews.find(r => r.id === id);
+  if (!review) return;
+  document.getElementById('editReviewId').value = review.id;
+  document.getElementById('editReviewTelegram').value = review.telegram || '';
+  document.getElementById('editReviewStatus').value = review.status || 'not_wrote';
+  document.getElementById('editReviewComment').value = review.comment || '';
+  openModal('editReview');
+}
+
+function updateReview() {
+  const id = document.getElementById('editReviewId').value;
+  const review = state.reviews.find(r => r.id === id);
+  if (!review) return;
+
+  review.telegram = document.getElementById('editReviewTelegram').value.trim();
+  review.status = document.getElementById('editReviewStatus').value;
+  review.comment = document.getElementById('editReviewComment').value.trim();
+
+  if (!review.telegram) return alert('Укажите Telegram');
+
+  saveLocal();
+  firebaseSave('reviews', state.reviews);
+  closeModal();
+  renderAll();
 }
 
 // ==================== ALIPAY ====================
