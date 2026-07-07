@@ -2,39 +2,42 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Underrbuy CRM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#000000">
+  <title>UNDRRBUY</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <!-- Sidebar (Desktop) -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">UNDRRBUY</div>
-    <a class="nav-item active" data-page="dashboard">● Главная</a>
-    <a class="nav-item" data-page="orders">● Заказы</a>
-    <a class="nav-item" data-page="reviews">● Отзывы</a>
-    <a class="nav-item" data-page="settings">● Настройки</a>
+    <a class="nav-item active" data-page="dashboard"><span class="nav-dot"></span> Главная</a>
+    <a class="nav-item" data-page="orders"><span class="nav-dot"></span> Заказы</a>
+    <a class="nav-item" data-page="reviews"><span class="nav-dot"></span> Отзывы</a>
+    <a class="nav-item" data-page="settings"><span class="nav-dot"></span> Настройки</a>
     <div class="sidebar-footer">
-      <span class="sync-status" id="syncStatus">Синхронизировано ✓</span>
+      <span class="sync-status" id="syncStatus">Синхронизировано</span>
     </div>
   </nav>
 
   <!-- Bottom Nav (Mobile) -->
   <nav class="bottom-nav" id="bottomNav">
     <a class="bottom-nav-item active" data-page="dashboard">
-      <span class="bottom-nav-icon">●</span>
+      <span class="bottom-nav-icon"></span>
       <span>Главная</span>
     </a>
     <a class="bottom-nav-item" data-page="orders">
-      <span class="bottom-nav-icon">●</span>
+      <span class="bottom-nav-icon"></span>
       <span>Заказы</span>
     </a>
     <a class="bottom-nav-item" data-page="reviews">
-      <span class="bottom-nav-icon">●</span>
+      <span class="bottom-nav-icon"></span>
       <span>Отзывы</span>
     </a>
     <a class="bottom-nav-item" data-page="settings">
-      <span class="bottom-nav-icon">●</span>
+      <span class="bottom-nav-icon"></span>
       <span>Настройки</span>
     </a>
   </nav>
@@ -75,13 +78,13 @@
         <div class="alipay-header">
           <span class="alipay-title">Alipay</span>
           <div class="alipay-buttons">
-            <button class="btn btn-sm" onclick="openModal('newOrder')">+ Новый заказ</button>
-            <button class="btn btn-sm" onclick="openModal('withdraw')">− Вывести из Alipay</button>
+            <button class="btn btn-sm" onclick="openModal('newOrder')">+ Заказ</button>
+            <button class="btn btn-sm" onclick="openModal('withdraw')">− Вывод</button>
           </div>
         </div>
         <div class="alipay-balance">
-          <span>Баланс:</span>
-          <span id="alipayBalance">0 ¥</span>
+          <span class="alipay-balance-label">Баланс</span>
+          <span class="alipay-balance-value" id="alipayBalance">0 ¥</span>
         </div>
       </div>
 
