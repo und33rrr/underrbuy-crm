@@ -228,10 +228,7 @@ function renderOrderCard(order, compact) {
     <div class="card">
       <div class="card-header">
         <span class="card-title">${esc(order.product)}</span>
-        <div class="card-actions">
-          <button class="card-edit" onclick="editOrder('${order.id}')" title="Редактировать">✎</button>
-          <button class="card-delete" onclick="deleteOrder('${order.id}')" title="Удалить">&times;</button>
-        </div>
+        <button class="card-delete" onclick="deleteOrder('${order.id}')" title="Удалить">&times;</button>
       </div>
       <div class="card-status">
         <select class="select" onchange="changeOrderStatus('${order.id}', this.value)">
@@ -249,6 +246,7 @@ function renderOrderCard(order, compact) {
         Прибыль: ${profitDisplay}
         ${order.trackNumber ? `<br>Трек: <strong>${esc(order.trackNumber)}</strong>` : ''}
       </div>
+      <button class="card-edit-btn" onclick="editOrder('${order.id}')">Редактировать</button>
     </div>`;
 }
 
@@ -278,10 +276,7 @@ function renderReviews() {
     <div class="card">
       <div class="card-header">
         <span class="card-title">${esc(r.telegram)}</span>
-        <div class="card-actions">
-          <button class="card-edit" onclick="editReview('${r.id}')" title="Редактировать">✎</button>
-          <button class="card-delete" onclick="deleteReview('${r.id}')" title="Удалить">&times;</button>
-        </div>
+        <button class="card-delete" onclick="deleteReview('${r.id}')" title="Удалить">&times;</button>
       </div>
       <div class="card-status">
         <select class="select" onchange="changeReviewStatus('${r.id}', this.value)">
@@ -291,6 +286,7 @@ function renderReviews() {
         </select>
       </div>
       ${r.comment ? `<div class="card-info">${esc(r.comment)}</div>` : ''}
+      <button class="card-edit-btn" onclick="editReview('${r.id}')">Редактировать</button>
     </div>`).join('');
 }
 
