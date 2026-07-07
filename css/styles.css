@@ -387,8 +387,42 @@ body {
 
 .card-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
+}
+
+.card-edit {
+  background: none;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--gray-dark);
+  padding: 8px 14px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.card-edit:hover {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
+}
+
+.card-delete {
+  background: none;
+  border: 1px solid var(--border);
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--gray-dark);
+  padding: 6px 12px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.card-delete:hover {
+  background: var(--black);
+  color: var(--white);
+  border-color: var(--black);
 }
 
 .card-edit {
@@ -635,7 +669,7 @@ body {
   .main-content {
     margin-left: 0;
     padding: 20px 16px;
-    padding-bottom: calc(80px + var(--safe-bottom));
+    padding-bottom: calc(100px + var(--safe-bottom));
   }
 
   .bottom-nav {
@@ -643,11 +677,17 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--white);
-    border-top: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: none;
     display: flex;
     z-index: 100;
-    padding-bottom: var(--safe-bottom);
+    padding: 8px 16px;
+    padding-bottom: calc(8px + var(--safe-bottom));
+    margin: 0 12px 12px;
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   }
 
   .bottom-nav-item {
@@ -655,24 +695,26 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 0 10px;
+    padding: 10px 0 8px;
     text-decoration: none;
     color: #ccc;
     font-size: 9px;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    gap: 4px;
+    gap: 6px;
     transition: color 0.15s ease;
+    border-radius: 14px;
   }
 
   .bottom-nav-item.active {
     color: var(--black);
+    background: var(--bg);
   }
 
   .bottom-nav-icon {
-    width: 4px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
     background: currentColor;
     border-radius: 50%;
   }
@@ -748,8 +790,18 @@ body {
 
   .card-delete {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 16px;
+    right: 16px;
+  }
+
+  .card-edit {
+    padding: 10px 16px;
+    font-size: 16px;
+  }
+
+  .card-delete {
+    padding: 8px 14px;
+    font-size: 18px;
   }
 
   .card-status .select {
