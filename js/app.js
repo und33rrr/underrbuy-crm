@@ -228,7 +228,7 @@ function renderOrderCard(order, compact) {
     <div class="card">
       <div class="card-header">
         <span class="card-title">${esc(order.product)}</span>
-        <button class="card-delete" onclick="deleteOrder('${order.id}')" title="Удалить">&times;</button>
+        <button class="card-edit-corner" onclick="editOrder('${order.id}')">✎</button>
       </div>
       <div class="card-status">
         <select class="select" onchange="changeOrderStatus('${order.id}', this.value)">
@@ -246,7 +246,7 @@ function renderOrderCard(order, compact) {
         Прибыль: ${profitDisplay}
         ${order.trackNumber ? `<br>Трек: <strong>${esc(order.trackNumber)}</strong>` : ''}
       </div>
-      <button class="card-edit-btn" onclick="editOrder('${order.id}')">Редактировать</button>
+      <button class="card-delete-corner" onclick="deleteOrder('${order.id}')">Удалить</button>
     </div>`;
 }
 
@@ -276,7 +276,7 @@ function renderReviews() {
     <div class="card">
       <div class="card-header">
         <span class="card-title">${esc(r.telegram)}</span>
-        <button class="card-delete" onclick="deleteReview('${r.id}')" title="Удалить">&times;</button>
+        <button class="card-edit-corner" onclick="editReview('${r.id}')">✎</button>
       </div>
       <div class="card-status">
         <select class="select" onchange="changeReviewStatus('${r.id}', this.value)">
@@ -286,7 +286,7 @@ function renderReviews() {
         </select>
       </div>
       ${r.comment ? `<div class="card-info">${esc(r.comment)}</div>` : ''}
-      <button class="card-edit-btn" onclick="editReview('${r.id}')">Редактировать</button>
+      <button class="card-delete-corner" onclick="deleteReview('${r.id}')">Удалить</button>
     </div>`).join('');
 }
 
