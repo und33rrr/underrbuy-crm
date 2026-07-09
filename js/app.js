@@ -131,7 +131,7 @@ function renderDashboard() {
 
   const calcProfit = (from, to) => state.orders
     .filter(o => o.createdAt >= from.getTime() && o.createdAt <= to.getTime())
-    .reduce((sum, o) => sum + getProfit(o), 0);
+    .reduce((sum, o) => sum + getProfitByn(o), 0);
 
   const todayProfit = calcProfit(todayStart, now);
   const weekProfit = calcProfit(weekStart, now);
@@ -316,6 +316,14 @@ function getProfitYuan(order) {
     return profit / (state.settings.yuanToRub || 12);
   }
   return profit / (state.settings.yuanToBynExchange || state.settings.yuanToByn || 4.2);
+}
+
+function getProfitByn(order) {
+  const profit = getProfit(order);
+  if (order.currency === 'RUB') {
+    return profit * (state.settings.yuanToByn / state.settings.yuanToRub);
+  }
+  return profit;
 }
 
 // ==================== ORDERS CRUD ====================
