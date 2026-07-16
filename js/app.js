@@ -313,9 +313,9 @@ function getProfit(order) {
 function getProfitYuan(order) {
   const profit = getProfit(order);
   if (order.currency === 'RUB') {
-    return profit / (state.settings.yuanToRub || 12);
+    return profit / (order.rateYuanToCurrency || state.settings.yuanToRub || 12);
   }
-  return profit / (state.settings.yuanToBynExchange || state.settings.yuanToByn || 4.2);
+  return profit / (order.rateYuanToCurrency || state.settings.yuanToByn || 4.5);
 }
 
 function getProfitByn(order) {
