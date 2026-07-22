@@ -370,6 +370,11 @@ body {
   letter-spacing: -0.2px;
 }
 
+.comment-badge {
+  font-size: 13px;
+  vertical-align: middle;
+}
+
 .card-delete {
   background: none;
   border: none;

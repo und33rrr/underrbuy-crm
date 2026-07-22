@@ -215,7 +215,7 @@ function renderOrderCard(order, compact) {
     return `
       <div class="card">
         <div class="card-header">
-          <span class="card-title">${esc(order.product)}</span>
+          <span class="card-title">${esc(order.product)}${order.comment ? ' <span class="comment-badge">💬</span>' : ''}</span>
           <span style="font-size:12px;color:var(--gray)">${statusLabels[order.status] || order.status}</span>
         </div>
         <div class="card-info">
@@ -227,7 +227,7 @@ function renderOrderCard(order, compact) {
   return `
     <div class="card">
       <div class="card-header">
-        <span class="card-title">${esc(order.product)}</span>
+        <span class="card-title">${esc(order.product)}${order.comment ? ' <span class="comment-badge">💬</span>' : ''}</span>
         <button class="card-delete-corner" onclick="deleteOrder('${order.id}')">&times;</button>
       </div>
       <div class="card-status">
