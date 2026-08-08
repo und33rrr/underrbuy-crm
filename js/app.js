@@ -332,6 +332,7 @@ function renderOrders() {
   let filtered = [...state.orders];
   if (search) {
     filtered = filtered.filter(o =>
+      (o.product || '').toLowerCase().includes(search) ||
       (o.telegram || '').toLowerCase().includes(search) ||
       (o.trackNumber || '').toLowerCase().includes(search)
     );
