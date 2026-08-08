@@ -63,14 +63,54 @@
           <div class="stat-sub" id="statWeekYuan">≈ 0 ¥</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Месяц</div>
+          <div class="stat-label">Месяц чистыми</div>
           <div class="stat-value" id="statMonth">0 BYN</div>
-          <div class="stat-sub" id="statMonthYuan">≈ 0 ¥</div>
+          <div class="stat-sub" id="statMonthYuan">До зарплат: 0 BYN</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Год</div>
+          <div class="stat-label">Год чистыми</div>
           <div class="stat-value" id="statYear">0 BYN</div>
-          <div class="stat-sub" id="statYearYuan">≈ 0 ¥</div>
+          <div class="stat-sub" id="statYearYuan">Зарплаты: 0 BYN</div>
+        </div>
+      </div>
+
+      <div class="monthly-section">
+        <div class="monthly-header">
+          <div>
+            <h2>Статистика по месяцам</h2>
+            <p>Прибыль после выплаты зарплат контентмейкерам</p>
+          </div>
+          <div class="monthly-controls">
+            <input type="month" class="input month-input" id="monthlyStatsMonth" onchange="changeStatsMonth(this.value)">
+            <button class="btn btn-sm" onclick="openContentExpenseModal()">− Выплата</button>
+          </div>
+        </div>
+
+        <div class="monthly-summary">
+          <div class="monthly-summary-item">
+            <span>До зарплат</span>
+            <strong id="monthlyGross">0 BYN</strong>
+          </div>
+          <div class="monthly-summary-item">
+            <span>Зарплаты</span>
+            <strong id="monthlyExpenses">− 0 BYN</strong>
+            <small id="monthlyExpensesYuan">0 ¥</small>
+          </div>
+          <div class="monthly-summary-item monthly-summary-net">
+            <span>Чистыми</span>
+            <strong id="monthlyNet">0 BYN</strong>
+          </div>
+        </div>
+
+        <div class="monthly-details">
+          <div>
+            <h3>Выплаты за месяц</h3>
+            <div id="contentExpensesList"></div>
+          </div>
+          <div>
+            <h3>История</h3>
+            <div class="monthly-history" id="monthlyHistory"></div>
+          </div>
         </div>
       </div>
 
@@ -343,6 +383,43 @@
         <h2>История выводов</h2>
         <div id="withdrawalsList"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Content creator expense modal -->
+  <div class="modal" id="modal-contentExpense">
+    <div class="modal-header">
+      <h2>Выплата контентмейкеру</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Месяц</label>
+          <input type="month" class="input" id="contentExpenseMonth" onchange="updateContentExpensePreview()">
+        </div>
+        <div class="form-group">
+          <label>Сумма (¥)</label>
+          <input type="number" class="input" id="contentExpenseAmount" min="0" step="0.01" inputmode="decimal" oninput="updateContentExpensePreview()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Курс ¥ → BYN</label>
+          <input type="number" class="input" id="contentExpenseRate" min="0" step="0.01" inputmode="decimal" oninput="updateContentExpensePreview()">
+        </div>
+        <div class="form-group">
+          <label>Кому / комментарий</label>
+          <input type="text" class="input" id="contentExpenseComment" placeholder="Например: Анна, контент за месяц">
+        </div>
+      </div>
+      <div class="preview">
+        <div class="preview-row">
+          <span>Будет вычтено:</span>
+          <span id="contentExpensePreview">0 BYN</span>
+        </div>
+      </div>
+      <button class="btn btn-full" onclick="saveContentExpense()">Добавить выплату</button>
     </div>
   </div>
 

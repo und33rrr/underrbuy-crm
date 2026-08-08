@@ -3,6 +3,7 @@ let state = {
   orders: [],
   reviews: [],
   alipayWithdrawals: [],
+  contentCreatorExpenses: [],
   settings: {
     yuanToByn: 4.5,
     yuanToBynExchange: 4.2,
@@ -15,6 +16,7 @@ let state = {
 
 let db = null;
 let useFirebase = false;
+let selectedStatsMonth = getMonthKey(new Date());
 
 // ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
@@ -55,13 +57,23 @@ function listenFirebase() {
     saveLocal();
   });
   db.ref('alipayWithdrawals').on('value', snap => {
-    state.alipayWithdrawals = snap.val() || [];
+    state.alipayWithdrawals = toArray(snap.val());
+    renderAll();
+    saveLocal();
+  });
+  db.ref('contentCreatorExpenses').on('value', snap => {
+    state.contentCreatorExpenses = toArray(snap.val());
     renderAll();
     saveLocal();
   });
   db.ref('settings').on('value', snap => {
     if (snap.val()) {
-      state.settings = { ...state.settings, ...snap.val() };
+      const settings = snap.val();
+      state.settings = {
+        ...state.settings,
+        ...settings,
+        airTariffs: { ...state.settings.airTariffs, ...(settings.airTariffs || {}) }
+      };
       loadSettingsForm();
       renderAll();
     }
@@ -82,7 +94,22 @@ function loadLocal() {
   const data = localStorage.getItem('underrbuy_crm');
   if (data) {
     const saved = JSON.parse(data);
-    state = { ...state, ...saved };
+    state = {
+      ...state,
+      ...saved,
+      orders: toArray(saved.orders),
+      reviews: toArray(saved.reviews),
+      alipayWithdrawals: toArray(saved.alipayWithdrawals),
+      contentCreatorExpenses: toArray(saved.contentCreatorExpenses),
+      settings: {
+        ...state.settings,
+        ...(saved.settings || {}),
+        airTariffs: {
+          ...state.settings.airTariffs,
+          ...(saved.settings?.airTariffs || {})
+        }
+      }
+    };
   }
   loadSettingsForm();
 }
@@ -124,7 +151,7 @@ function renderDashboard() {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(now);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
   weekStart.setHours(0, 0, 0, 0);
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const yearStart = new Date(now.getFullYear(), 0, 1);
@@ -135,19 +162,31 @@ function renderDashboard() {
 
   const todayProfit = calcProfit(todayStart, now);
   const weekProfit = calcProfit(weekStart, now);
-  const monthProfit = calcProfit(monthStart, now);
-  const yearProfit = calcProfit(yearStart, now);
+  const monthGrossProfit = calcProfit(monthStart, now);
+  const yearGrossProfit = calcProfit(yearStart, now);
 
   const rate = state.settings.yuanToBynExchange || state.settings.yuanToByn;
+  const currentMonth = getMonthKey(now);
+  const monthExpenses = getMonthExpenses(currentMonth)
+    .reduce((sum, expense) => sum + getExpenseByn(expense), 0);
+  const yearExpenses = state.contentCreatorExpenses
+    .filter(expense => (expense.month || '').startsWith(String(now.getFullYear()) + '-'))
+    .reduce((sum, expense) => sum + getExpenseByn(expense), 0);
+  const monthNetProfit = monthGrossProfit - monthExpenses;
+  const yearNetProfit = yearGrossProfit - yearExpenses;
 
   document.getElementById('statToday').textContent = formatMoney(todayProfit) + ' BYN';
   document.getElementById('statTodayYuan').textContent = '≈ ' + formatMoney(todayProfit / rate) + ' ¥';
   document.getElementById('statWeek').textContent = formatMoney(weekProfit) + ' BYN';
   document.getElementById('statWeekYuan').textContent = '≈ ' + formatMoney(weekProfit / rate) + ' ¥';
-  document.getElementById('statMonth').textContent = formatMoney(monthProfit) + ' BYN';
-  document.getElementById('statMonthYuan').textContent = '≈ ' + formatMoney(monthProfit / rate) + ' ¥';
-  document.getElementById('statYear').textContent = formatMoney(yearProfit) + ' BYN';
-  document.getElementById('statYearYuan').textContent = '≈ ' + formatMoney(yearProfit / rate) + ' ¥';
+  document.getElementById('statMonth').textContent = formatMoney(monthNetProfit) + ' BYN';
+  document.getElementById('statMonthYuan').textContent = 'До зарплат: ' + formatMoney(monthGrossProfit) + ' BYN';
+  document.getElementById('statYear').textContent = formatMoney(yearNetProfit) + ' BYN';
+  document.getElementById('statYearYuan').textContent = 'Зарплаты: ' + formatMoney(yearExpenses) + ' BYN';
+
+  setValueTone(document.getElementById('statMonth'), monthNetProfit);
+  setValueTone(document.getElementById('statYear'), yearNetProfit);
+  renderMonthlyStatistics();
 
   // Alipay balance
   const totalEarned = state.orders.reduce((sum, o) => sum + getProfitYuan(o), 0);
@@ -162,6 +201,127 @@ function renderDashboard() {
     return;
   }
   container.innerHTML = recent.map(o => renderOrderCard(o, true)).join('');
+}
+
+function getMonthKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function formatMonthLabel(monthKey) {
+  if (!/^\d{4}-\d{2}$/.test(monthKey || '')) return monthKey || '';
+  const [year, month] = monthKey.split('-').map(Number);
+  const label = new Intl.DateTimeFormat('ru-RU', {
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(year, month - 1, 1));
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function getExpenseRate(expense) {
+  return expense.rateYuanToByn || state.settings.yuanToBynExchange || state.settings.yuanToByn;
+}
+
+function getExpenseByn(expense) {
+  return (expense.amountYuan || 0) * getExpenseRate(expense);
+}
+
+function getMonthExpenses(monthKey) {
+  return state.contentCreatorExpenses.filter(expense => expense.month === monthKey);
+}
+
+function getMonthSummary(monthKey) {
+  const orders = state.orders.filter(order => getMonthKey(order.createdAt) === monthKey);
+  const expenses = getMonthExpenses(monthKey);
+  const grossByn = orders.reduce((sum, order) => sum + getProfitByn(order), 0);
+  const expensesYuan = expenses.reduce((sum, expense) => sum + (expense.amountYuan || 0), 0);
+  const expensesByn = expenses.reduce((sum, expense) => sum + getExpenseByn(expense), 0);
+
+  return {
+    ordersCount: orders.length,
+    grossByn,
+    expensesYuan,
+    expensesByn,
+    netByn: grossByn - expensesByn
+  };
+}
+
+function getStatsMonthKeys() {
+  const keys = new Set();
+  const cursor = new Date();
+  cursor.setDate(1);
+  for (let i = 0; i < 12; i += 1) {
+    keys.add(getMonthKey(cursor));
+    cursor.setMonth(cursor.getMonth() - 1);
+  }
+  state.orders.forEach(order => keys.add(getMonthKey(order.createdAt)));
+  state.contentCreatorExpenses.forEach(expense => keys.add(expense.month));
+  return [...keys].filter(key => /^\d{4}-\d{2}$/.test(key || '')).sort().reverse();
+}
+
+function renderMonthlyStatistics() {
+  const monthInput = document.getElementById('monthlyStatsMonth');
+  if (!monthInput) return;
+  if (!/^\d{4}-\d{2}$/.test(selectedStatsMonth)) selectedStatsMonth = getMonthKey(new Date());
+  monthInput.value = selectedStatsMonth;
+
+  const summary = getMonthSummary(selectedStatsMonth);
+  document.getElementById('monthlyGross').textContent = formatMoney(summary.grossByn) + ' BYN';
+  document.getElementById('monthlyExpenses').textContent = '− ' + formatMoney(summary.expensesByn) + ' BYN';
+  document.getElementById('monthlyExpensesYuan').textContent = formatMoney(summary.expensesYuan) + ' ¥';
+  const netElement = document.getElementById('monthlyNet');
+  netElement.textContent = formatMoney(summary.netByn) + ' BYN';
+  setValueTone(netElement, summary.netByn);
+
+  renderContentExpenses();
+
+  const history = document.getElementById('monthlyHistory');
+  history.innerHTML = `
+    <div class="monthly-history-head">
+      <span>Месяц</span><span>До зарплат</span><span>Зарплаты</span><span>Чистыми</span>
+    </div>
+    ${getStatsMonthKeys().map(monthKey => {
+      const item = getMonthSummary(monthKey);
+      return `
+        <button class="monthly-history-row ${monthKey === selectedStatsMonth ? 'active' : ''}" onclick="changeStatsMonth('${monthKey}')">
+          <span>${formatMonthLabel(monthKey)}<small>Заказов: ${item.ordersCount}</small></span>
+          <span>${formatMoney(item.grossByn)}</span>
+          <span>− ${formatMoney(item.expensesByn)}</span>
+          <strong class="${item.netByn < 0 ? 'negative' : ''}">${formatMoney(item.netByn)} BYN</strong>
+        </button>`;
+    }).join('')}`;
+}
+
+function renderContentExpenses() {
+  const container = document.getElementById('contentExpensesList');
+  if (!container) return;
+  const expenses = [...getMonthExpenses(selectedStatsMonth)].sort((a, b) => b.createdAt - a.createdAt);
+  if (expenses.length === 0) {
+    container.innerHTML = '<div class="empty-state empty-state-compact">Выплат пока нет</div>';
+    return;
+  }
+
+  container.innerHTML = expenses.map(expense => `
+    <div class="expense-row">
+      <div>
+        <strong>${formatMoney(expense.amountYuan)} ¥</strong>
+        <span>${formatMoney(getExpenseByn(expense))} BYN по курсу ${formatMoney(getExpenseRate(expense))}</span>
+        ${expense.comment ? `<small>${esc(expense.comment)}</small>` : ''}
+      </div>
+      <button class="card-delete" aria-label="Удалить выплату" onclick="deleteContentExpense('${expense.id}')">&times;</button>
+    </div>`).join('');
+}
+
+function changeStatsMonth(monthKey) {
+  if (!/^\d{4}-\d{2}$/.test(monthKey || '')) return;
+  selectedStatsMonth = monthKey;
+  renderMonthlyStatistics();
+}
+
+function setValueTone(element, value) {
+  if (!element) return;
+  element.classList.toggle('negative', value < 0);
 }
 
 function renderOrders() {
@@ -580,6 +740,55 @@ function renderWithdrawals() {
     </div>`).join('');
 }
 
+// ==================== CONTENT CREATOR EXPENSES ====================
+function openContentExpenseModal() {
+  document.getElementById('contentExpenseMonth').value = selectedStatsMonth;
+  document.getElementById('contentExpenseAmount').value = '';
+  document.getElementById('contentExpenseRate').value = state.settings.yuanToBynExchange || state.settings.yuanToByn;
+  document.getElementById('contentExpenseComment').value = '';
+  updateContentExpensePreview();
+  openModal('contentExpense');
+}
+
+function updateContentExpensePreview() {
+  const amountYuan = parseFloat(document.getElementById('contentExpenseAmount').value) || 0;
+  const rate = parseFloat(document.getElementById('contentExpenseRate').value) || 0;
+  document.getElementById('contentExpensePreview').textContent = formatMoney(amountYuan * rate) + ' BYN';
+}
+
+function saveContentExpense() {
+  const month = document.getElementById('contentExpenseMonth').value;
+  const amountYuan = parseFloat(document.getElementById('contentExpenseAmount').value);
+  const rateYuanToByn = parseFloat(document.getElementById('contentExpenseRate').value);
+
+  if (!/^\d{4}-\d{2}$/.test(month || '')) return alert('Выберите месяц');
+  if (!amountYuan || amountYuan <= 0) return alert('Укажите сумму выплаты');
+  if (!rateYuanToByn || rateYuanToByn <= 0) return alert('Укажите курс ¥ → BYN');
+
+  state.contentCreatorExpenses.push({
+    id: 'salary_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+    month,
+    amountYuan,
+    rateYuanToByn,
+    comment: document.getElementById('contentExpenseComment').value.trim(),
+    createdAt: Date.now()
+  });
+
+  selectedStatsMonth = month;
+  saveLocal();
+  firebaseSave('contentCreatorExpenses', state.contentCreatorExpenses);
+  closeModal();
+  renderDashboard();
+}
+
+function deleteContentExpense(id) {
+  if (!confirm('Удалить выплату контентмейкеру?')) return;
+  state.contentCreatorExpenses = state.contentCreatorExpenses.filter(expense => expense.id !== id);
+  saveLocal();
+  firebaseSave('contentCreatorExpenses', state.contentCreatorExpenses);
+  renderDashboard();
+}
+
 // ==================== SETTINGS ====================
 function loadSettingsForm() {
   const s = state.settings;
@@ -641,11 +850,13 @@ function importData(event) {
       if (data.orders) state.orders = data.orders;
       if (data.reviews) state.reviews = data.reviews;
       if (data.alipayWithdrawals) state.alipayWithdrawals = data.alipayWithdrawals;
+      if (data.contentCreatorExpenses) state.contentCreatorExpenses = toArray(data.contentCreatorExpenses);
       if (data.settings) state.settings = { ...state.settings, ...data.settings };
       saveLocal();
       firebaseSave('orders', state.orders);
       firebaseSave('reviews', state.reviews);
       firebaseSave('alipayWithdrawals', state.alipayWithdrawals);
+      firebaseSave('contentCreatorExpenses', state.contentCreatorExpenses);
       firebaseSave('settings', state.settings);
       loadSettingsForm();
       renderAll();
@@ -715,6 +926,11 @@ function updateOrderPreview() {
 // ==================== UTILITIES ====================
 function formatMoney(n) {
   return parseFloat(n || 0).toFixed(2).replace(/\.00$/, '').replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+}
+
+function toArray(value) {
+  if (!value) return [];
+  return Array.isArray(value) ? value.filter(Boolean) : Object.values(value).filter(Boolean);
 }
 
 function esc(str) {
