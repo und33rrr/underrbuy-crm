@@ -247,6 +247,40 @@ function getMonthSummary(monthKey) {
   };
 }
 
+function getDailyStats(monthKey) {
+  if (!/^\d{4}-\d{2}$/.test(monthKey || '')) return [];
+  const [year, month] = monthKey.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const now = new Date();
+  const lastDay = monthKey === getMonthKey(now) ? Math.min(now.getDate(), daysInMonth) : daysInMonth;
+  const days = Array.from({ length: lastDay }, (_, index) => ({
+    day: index + 1,
+    date: new Date(year, month - 1, index + 1),
+    ordersCount: 0,
+    profitByn: 0
+  }));
+
+  state.orders
+    .filter(order => getMonthKey(order.createdAt) === monthKey)
+    .forEach(order => {
+      const day = new Date(order.createdAt).getDate();
+      const item = days[day - 1];
+      if (!item) return;
+      item.ordersCount += 1;
+      item.profitByn += getProfitByn(order);
+    });
+
+  return days;
+}
+
+function formatDayLabel(date, withWeekday = false) {
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    ...(withWeekday ? { weekday: 'short' } : {})
+  }).format(date);
+}
+
 function getStatsMonthKeys() {
   const keys = new Set();
   const cursor = new Date();
@@ -274,6 +308,7 @@ function renderMonthlyStatistics() {
   netElement.textContent = formatMoney(summary.netByn) + ' BYN';
   setValueTone(netElement, summary.netByn);
 
+  renderDailyStatistics();
   renderContentExpenses();
 
   const history = document.getElementById('monthlyHistory');
@@ -290,6 +325,53 @@ function renderMonthlyStatistics() {
           <span>− ${formatMoney(item.expensesByn)}</span>
           <strong class="${item.netByn < 0 ? 'negative' : ''}">${formatMoney(item.netByn)} BYN</strong>
         </button>`;
+    }).join('')}`;
+}
+
+function renderDailyStatistics() {
+  const list = document.getElementById('dailyStatsList');
+  if (!list) return;
+
+  const days = getDailyStats(selectedStatsMonth);
+  const activeDays = days.filter(day => day.ordersCount > 0);
+  const bestDay = activeDays.reduce((best, day) => (!best || day.profitByn > best.profitByn) ? day : best, null);
+  const worstDay = activeDays.reduce((worst, day) => (!worst || day.profitByn < worst.profitByn) ? day : worst, null);
+  const bestValue = document.getElementById('dailyBestValue');
+  const worstValue = document.getElementById('dailyWorstValue');
+
+  document.getElementById('dailyPeriodLabel').textContent = formatMonthLabel(selectedStatsMonth);
+
+  if (bestDay) {
+    bestValue.textContent = formatMoney(bestDay.profitByn) + ' BYN';
+    document.getElementById('dailyBestDate').textContent = `${formatDayLabel(bestDay.date)} · заказов: ${bestDay.ordersCount}`;
+    worstValue.textContent = formatMoney(worstDay.profitByn) + ' BYN';
+    document.getElementById('dailyWorstDate').textContent = `${formatDayLabel(worstDay.date)} · заказов: ${worstDay.ordersCount}`;
+    setValueTone(bestValue, bestDay.profitByn);
+    setValueTone(worstValue, worstDay.profitByn);
+  } else {
+    bestValue.textContent = '—';
+    worstValue.textContent = '—';
+    document.getElementById('dailyBestDate').textContent = 'Нет заказов';
+    document.getElementById('dailyWorstDate').textContent = 'Нет заказов';
+    setValueTone(bestValue, 0);
+    setValueTone(worstValue, 0);
+  }
+
+  const maxAbsoluteProfit = Math.max(...days.map(day => Math.abs(day.profitByn)), 1);
+  list.innerHTML = `
+    <div class="daily-stats-head">
+      <span>День</span><span>Прибыль</span>
+    </div>
+    ${[...days].reverse().map(day => {
+      const width = day.profitByn === 0 ? 0 : Math.max(2, Math.abs(day.profitByn) / maxAbsoluteProfit * 100);
+      return `
+        <div class="daily-stats-row">
+          <span class="daily-date">${formatDayLabel(day.date, true)}<small>Заказов: ${day.ordersCount}</small></span>
+          <div class="daily-profit-track">
+            <span class="daily-profit-bar ${day.profitByn < 0 ? 'negative-bar' : ''}" style="width:${width.toFixed(2)}%"></span>
+          </div>
+          <strong class="${day.profitByn < 0 ? 'negative' : ''}">${formatMoney(day.profitByn)} BYN</strong>
+        </div>`;
     }).join('')}`;
 }
 

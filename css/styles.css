@@ -266,6 +266,138 @@ body {
   background: var(--bg);
 }
 
+.daily-profit-section {
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-bottom: 28px;
+}
+
+.daily-profit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.daily-profit-header h3 {
+  color: var(--gray-dark);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.daily-profit-header p,
+.daily-profit-header > span {
+  color: var(--gray);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.daily-profit-header > span {
+  white-space: nowrap;
+}
+
+.daily-highlights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  margin-bottom: 20px;
+}
+
+.daily-highlight {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--bg);
+  padding: 16px;
+}
+
+.daily-highlight span,
+.daily-highlight small {
+  color: var(--gray);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.daily-highlight strong {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.daily-stats-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.daily-stats-head,
+.daily-stats-row {
+  display: grid;
+  grid-template-columns: 110px minmax(80px, 1fr) 110px;
+  align-items: center;
+  gap: 14px;
+}
+
+.daily-stats-head {
+  color: var(--gray);
+  font-size: 9px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 0 0 8px;
+}
+
+.daily-stats-head span:last-child {
+  grid-column: 2 / 4;
+  text-align: right;
+}
+
+.daily-stats-row {
+  min-height: 44px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.daily-date {
+  display: flex;
+  flex-direction: column;
+  text-transform: capitalize;
+}
+
+.daily-date small {
+  color: var(--gray);
+  font-size: 9px;
+  font-weight: 400;
+  text-transform: none;
+}
+
+.daily-profit-track {
+  height: 5px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.daily-profit-bar {
+  display: block;
+  height: 100%;
+  background: var(--black);
+}
+
+.daily-profit-bar.negative-bar {
+  background: #c00;
+}
+
+.daily-stats-row strong {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .monthly-details {
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(420px, 1.4fr);
@@ -978,6 +1110,33 @@ body {
   .monthly-summary-item + .monthly-summary-item {
     border-left: none;
     border-top: 1px solid var(--border);
+  }
+
+  .daily-profit-section {
+    padding: 16px;
+  }
+
+  .daily-profit-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .daily-highlight {
+    padding: 14px 12px;
+  }
+
+  .daily-highlight strong {
+    font-size: 16px;
+  }
+
+  .daily-stats-head,
+  .daily-stats-row {
+    grid-template-columns: 82px minmax(40px, 1fr) 86px;
+    gap: 8px;
+  }
+
+  .daily-stats-row strong {
+    font-size: 11px;
   }
 
   .monthly-details {
