@@ -227,10 +227,6 @@
             <label>¥ → RUB</label>
             <input type="number" class="input" id="setYuanToRub" step="0.01">
           </div>
-          <div class="setting-item">
-            <label>$ → ¥</label>
-            <input type="number" class="input" id="setDollarToYuan" step="0.01">
-          </div>
         </div>
       </div>
 
@@ -238,8 +234,12 @@
         <h2>Тарифы доставки</h2>
         <div class="settings-grid">
           <div class="setting-item">
-            <label>Авто ($/кг)</label>
-            <input type="number" class="input" id="setAutoPrice" step="0.1">
+            <label>Курс $ → ¥ для авто 6 $/кг</label>
+            <input type="number" class="input" id="setAutoStandardDollarToYuan" min="0" step="0.01">
+          </div>
+          <div class="setting-item">
+            <label>Курс $ → ¥ для авто 3.9 $/кг</label>
+            <input type="number" class="input" id="setAutoEconomyDollarToYuan" min="0" step="0.01">
           </div>
           <div class="setting-item">
             <label>Авиа стандарт (¥/кг)</label>
@@ -296,9 +296,16 @@
             <option value="air">Авиа</option>
           </select>
         </div>
+        <div class="form-group" id="autoTariffGroup">
+          <label>Тариф авто</label>
+          <select class="select" id="orderAutoTariff" onchange="updateOrderPreview()">
+            <option value="standard">6 $/кг</option>
+            <option value="economy">3.9 $/кг</option>
+          </select>
+        </div>
         <div class="form-group" id="airTariffGroup" style="display:none">
-          <label>Тариф</label>
-          <select class="select" id="orderAirTariff">
+          <label>Тариф авиа</label>
+          <select class="select" id="orderAirTariff" onchange="updateOrderPreview()">
             <option value="120">120 ¥/кг</option>
             <option value="110">110 ¥/кг</option>
             <option value="100">100 ¥/кг</option>
@@ -474,9 +481,16 @@
             <option value="air">Авиа</option>
           </select>
         </div>
+        <div class="form-group" id="editAutoTariffGroup">
+          <label>Тариф авто</label>
+          <select class="select" id="editOrderAutoTariff" onchange="updateEditPreview()">
+            <option value="standard">6 $/кг</option>
+            <option value="economy">3.9 $/кг</option>
+          </select>
+        </div>
         <div class="form-group" id="editAirTariffGroup" style="display:none">
-          <label>Тариф</label>
-          <select class="select" id="editOrderAirTariff">
+          <label>Тариф авиа</label>
+          <select class="select" id="editOrderAirTariff" onchange="updateEditPreview()">
             <option value="120">120 ¥/кг</option>
             <option value="110">110 ¥/кг</option>
             <option value="100">100 ¥/кг</option>

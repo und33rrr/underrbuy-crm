@@ -10,6 +10,10 @@ let state = {
     yuanToRub: 12.0,
     dollarToYuan: 7.0,
     autoPricePerKg: 6,
+    autoTariffs: {
+      standard: { priceUsdPerKg: 6, dollarToYuan: 7 },
+      economy: { priceUsdPerKg: 3.9, dollarToYuan: 7 }
+    },
     airTariffs: { standard: 120, economy: 110, fast: 100 }
   }
 };
@@ -68,12 +72,7 @@ function listenFirebase() {
   });
   db.ref('settings').on('value', snap => {
     if (snap.val()) {
-      const settings = snap.val();
-      state.settings = {
-        ...state.settings,
-        ...settings,
-        airTariffs: { ...state.settings.airTariffs, ...(settings.airTariffs || {}) }
-      };
+      state.settings = mergeSettings(snap.val());
       loadSettingsForm();
       renderAll();
     }
@@ -101,17 +100,32 @@ function loadLocal() {
       reviews: toArray(saved.reviews),
       alipayWithdrawals: toArray(saved.alipayWithdrawals),
       contentCreatorExpenses: toArray(saved.contentCreatorExpenses),
-      settings: {
-        ...state.settings,
-        ...(saved.settings || {}),
-        airTariffs: {
-          ...state.settings.airTariffs,
-          ...(saved.settings?.airTariffs || {})
-        }
-      }
+      settings: mergeSettings(saved.settings)
     };
   }
   loadSettingsForm();
+}
+
+function mergeSettings(incoming = {}) {
+  const incomingAutoTariffs = incoming.autoTariffs || {};
+  return {
+    ...state.settings,
+    ...incoming,
+    airTariffs: {
+      ...state.settings.airTariffs,
+      ...(incoming.airTariffs || {})
+    },
+    autoTariffs: {
+      standard: {
+        ...state.settings.autoTariffs.standard,
+        ...(incomingAutoTariffs.standard || {})
+      },
+      economy: {
+        ...state.settings.autoTariffs.economy,
+        ...(incomingAutoTariffs.economy || {})
+      }
+    }
+  };
 }
 
 // ==================== FIREBASE SAVE ====================
@@ -444,7 +458,9 @@ function renderOrderCard(order, compact) {
     sent_to_client: 'Отправлен клиенту',
     completed: 'Завершён'
   };
-  const deliveryLabel = order.deliveryType === 'air' ? 'Авиа' : 'Авто';
+  const deliveryLabel = order.deliveryType === 'air'
+    ? 'Авиа'
+    : `Авто ${formatMoney(getOrderAutoPricePerKg(order))} $/кг`;
 
   let profitDisplay = `<span class="card-profit">${formatMoney(profit)} ${currency}</span>`;
   if (currency === 'BYN') {
@@ -534,10 +550,40 @@ function renderReviews() {
 }
 
 // ==================== CALCULATIONS ====================
+function getAutoTariffSettings(tariffKey = 'standard') {
+  const tariffs = state.settings.autoTariffs || {};
+  const configured = tariffs[tariffKey] || tariffs.standard || {};
+  return {
+    priceUsdPerKg: tariffKey === 'economy' ? 3.9 : 6,
+    dollarToYuan: Number(configured.dollarToYuan) || state.settings.dollarToYuan || 7
+  };
+}
+
+function getOrderAutoTariffKey(order) {
+  if (order.autoTariffKey === 'economy' || order.autoTariffKey === 'standard') {
+    return order.autoTariffKey;
+  }
+  return Math.abs(Number(order.autoPricePerKg) - 3.9) < 0.001 ? 'economy' : 'standard';
+}
+
+function getOrderAutoPricePerKg(order) {
+  if (Number(order.autoPricePerKg) > 0) return Number(order.autoPricePerKg);
+  if (order.autoTariffKey) return getAutoTariffSettings(order.autoTariffKey).priceUsdPerKg;
+  return state.settings.autoPricePerKg || 6;
+}
+
+function getOrderAutoDollarToYuan(order) {
+  if (Number(order.autoDollarToYuan) > 0) return Number(order.autoDollarToYuan);
+  if (order.autoTariffKey) return getAutoTariffSettings(order.autoTariffKey).dollarToYuan;
+  // Legacy orders were calculated with the former default rate. Keep their
+  // historical profit stable when the new per-tariff rates are changed.
+  return 7;
+}
+
 function getDeliveryYuan(order) {
   const w = order.weightKg || 0;
   if (order.deliveryType === 'auto') {
-    return w * (state.settings.autoPricePerKg || 6) * (state.settings.dollarToYuan || 7);
+    return w * getOrderAutoPricePerKg(order) * getOrderAutoDollarToYuan(order);
   }
   const tariff = order.airTariff || state.settings.airTariffs.standard || 120;
   return w * tariff;
@@ -571,12 +617,17 @@ function getProfitByn(order) {
 
 // ==================== ORDERS CRUD ====================
 function saveOrder() {
+  const autoTariffKey = document.getElementById('orderAutoTariff').value;
+  const autoTariff = getAutoTariffSettings(autoTariffKey);
   const order = {
     id: 'ord_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
     product: document.getElementById('orderProduct').value.trim(),
     telegram: document.getElementById('orderTelegram').value.trim(),
     deliveryType: document.getElementById('orderDeliveryType').value,
     airTariff: parseInt(document.getElementById('orderAirTariff').value),
+    autoTariffKey,
+    autoPricePerKg: autoTariff.priceUsdPerKg,
+    autoDollarToYuan: autoTariff.dollarToYuan,
     currency: document.getElementById('orderCurrency').value,
     priceYuan: parseFloat(document.getElementById('orderPriceYuan').value) || 0,
     weightKg: parseFloat(document.getElementById('orderWeight').value) || 0,
@@ -625,6 +676,7 @@ function editOrder(id) {
   document.getElementById('editOrderTelegram').value = order.telegram || '';
   document.getElementById('editOrderDeliveryType').value = order.deliveryType || 'auto';
   document.getElementById('editOrderAirTariff').value = order.airTariff || 120;
+  document.getElementById('editOrderAutoTariff').value = getOrderAutoTariffKey(order);
   document.getElementById('editOrderCurrency').value = order.currency || 'BYN';
   document.getElementById('editOrderPriceYuan').value = order.priceYuan || '';
   document.getElementById('editOrderWeight').value = order.weightKg || '';
@@ -641,6 +693,7 @@ function editOrder(id) {
 function toggleEditAirTariff() {
   const isAir = document.getElementById('editOrderDeliveryType').value === 'air';
   document.getElementById('editAirTariffGroup').style.display = isAir ? 'block' : 'none';
+  document.getElementById('editAutoTariffGroup').style.display = isAir ? 'none' : 'block';
   updateEditPreview();
 }
 
@@ -654,7 +707,15 @@ function updateEditPreview() {
 
   let deliveryYuan;
   if (deliveryType === 'auto') {
-    deliveryYuan = weight * (state.settings.autoPricePerKg || 6) * (state.settings.dollarToYuan || 7);
+    const selectedAutoTariffKey = document.getElementById('editOrderAutoTariff').value;
+    const existingOrder = state.orders.find(order => order.id === document.getElementById('editOrderId').value);
+    const autoTariff = existingOrder && getOrderAutoTariffKey(existingOrder) === selectedAutoTariffKey
+      ? {
+          priceUsdPerKg: getOrderAutoPricePerKg(existingOrder),
+          dollarToYuan: getOrderAutoDollarToYuan(existingOrder)
+        }
+      : getAutoTariffSettings(selectedAutoTariffKey);
+    deliveryYuan = weight * autoTariff.priceUsdPerKg * autoTariff.dollarToYuan;
   } else {
     const tariff = parseInt(document.getElementById('editOrderAirTariff').value) || 120;
     deliveryYuan = weight * tariff;
@@ -680,6 +741,17 @@ function updateOrder() {
   order.telegram = document.getElementById('editOrderTelegram').value.trim();
   order.deliveryType = document.getElementById('editOrderDeliveryType').value;
   order.airTariff = parseInt(document.getElementById('editOrderAirTariff').value);
+  const previousAutoTariffKey = getOrderAutoTariffKey(order);
+  const selectedAutoTariffKey = document.getElementById('editOrderAutoTariff').value;
+  const autoTariff = previousAutoTariffKey === selectedAutoTariffKey
+    ? {
+        priceUsdPerKg: getOrderAutoPricePerKg(order),
+        dollarToYuan: getOrderAutoDollarToYuan(order)
+      }
+    : getAutoTariffSettings(selectedAutoTariffKey);
+  order.autoTariffKey = selectedAutoTariffKey;
+  order.autoPricePerKg = autoTariff.priceUsdPerKg;
+  order.autoDollarToYuan = autoTariff.dollarToYuan;
   order.currency = document.getElementById('editOrderCurrency').value;
   order.priceYuan = parseFloat(document.getElementById('editOrderPriceYuan').value) || 0;
   order.weightKg = parseFloat(document.getElementById('editOrderWeight').value) || 0;
@@ -703,6 +775,7 @@ function clearOrderForm() {
     document.getElementById(id).value = '';
   });
   document.getElementById('orderDeliveryType').value = 'auto';
+  document.getElementById('orderAutoTariff').value = 'standard';
   document.getElementById('orderCurrency').value = 'BYN';
   toggleAirTariff();
   updateOrderPreview();
@@ -878,26 +951,45 @@ function loadSettingsForm() {
   document.getElementById('setYuanToByn').value = s.yuanToByn;
   document.getElementById('setYuanToBynExchange').value = s.yuanToBynExchange;
   document.getElementById('setYuanToRub').value = s.yuanToRub;
-  document.getElementById('setDollarToYuan').value = s.dollarToYuan;
-  document.getElementById('setAutoPrice').value = s.autoPricePerKg;
+  document.getElementById('setAutoStandardDollarToYuan').value = getAutoTariffSettings('standard').dollarToYuan;
+  document.getElementById('setAutoEconomyDollarToYuan').value = getAutoTariffSettings('economy').dollarToYuan;
   document.getElementById('setAirStandard').value = s.airTariffs.standard;
   document.getElementById('setAirEconomy').value = s.airTariffs.economy;
   document.getElementById('setAirFast').value = s.airTariffs.fast;
+  updateAutoTariffLabels();
+}
+
+function updateAutoTariffLabels() {
+  const standard = getAutoTariffSettings('standard');
+  const economy = getAutoTariffSettings('economy');
+  ['orderAutoTariff', 'editOrderAutoTariff'].forEach(id => {
+    const select = document.getElementById(id);
+    if (!select) return;
+    select.querySelector('option[value="standard"]').textContent = `6 $/кг · курс ${formatMoney(standard.dollarToYuan)} ¥/$`;
+    select.querySelector('option[value="economy"]').textContent = `3.9 $/кг · курс ${formatMoney(economy.dollarToYuan)} ¥/$`;
+  });
 }
 
 function saveSettings() {
+  const standardDollarToYuan = parseFloat(document.getElementById('setAutoStandardDollarToYuan').value) || 7;
+  const economyDollarToYuan = parseFloat(document.getElementById('setAutoEconomyDollarToYuan').value) || 7;
   state.settings = {
     yuanToByn: parseFloat(document.getElementById('setYuanToByn').value) || 4.5,
     yuanToBynExchange: parseFloat(document.getElementById('setYuanToBynExchange').value) || 4.2,
     yuanToRub: parseFloat(document.getElementById('setYuanToRub').value) || 12,
-    dollarToYuan: parseFloat(document.getElementById('setDollarToYuan').value) || 7,
-    autoPricePerKg: parseFloat(document.getElementById('setAutoPrice').value) || 6,
+    dollarToYuan: standardDollarToYuan,
+    autoPricePerKg: 6,
+    autoTariffs: {
+      standard: { priceUsdPerKg: 6, dollarToYuan: standardDollarToYuan },
+      economy: { priceUsdPerKg: 3.9, dollarToYuan: economyDollarToYuan }
+    },
     airTariffs: {
       standard: parseInt(document.getElementById('setAirStandard').value) || 120,
       economy: parseInt(document.getElementById('setAirEconomy').value) || 110,
       fast: parseInt(document.getElementById('setAirFast').value) || 100
     }
   };
+  updateAutoTariffLabels();
   saveLocal();
   firebaseSave('settings', state.settings);
   renderAll();
@@ -934,7 +1026,7 @@ function importData(event) {
       if (data.reviews) state.reviews = data.reviews;
       if (data.alipayWithdrawals) state.alipayWithdrawals = data.alipayWithdrawals;
       if (data.contentCreatorExpenses) state.contentCreatorExpenses = toArray(data.contentCreatorExpenses);
-      if (data.settings) state.settings = { ...state.settings, ...data.settings };
+      if (data.settings) state.settings = mergeSettings(data.settings);
       saveLocal();
       firebaseSave('orders', state.orders);
       firebaseSave('reviews', state.reviews);
@@ -976,6 +1068,7 @@ function closeModal() {
 function toggleAirTariff() {
   const isAir = document.getElementById('orderDeliveryType').value === 'air';
   document.getElementById('airTariffGroup').style.display = isAir ? 'block' : 'none';
+  document.getElementById('autoTariffGroup').style.display = isAir ? 'none' : 'block';
   updateOrderPreview();
 }
 
@@ -989,7 +1082,8 @@ function updateOrderPreview() {
 
   let deliveryYuan;
   if (deliveryType === 'auto') {
-    deliveryYuan = weight * (state.settings.autoPricePerKg || 6) * (state.settings.dollarToYuan || 7);
+    const autoTariff = getAutoTariffSettings(document.getElementById('orderAutoTariff').value);
+    deliveryYuan = weight * autoTariff.priceUsdPerKg * autoTariff.dollarToYuan;
   } else {
     const tariff = parseInt(document.getElementById('orderAirTariff').value) || 120;
     deliveryYuan = weight * tariff;
